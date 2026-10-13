@@ -12,13 +12,22 @@ struct ContentView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var selectedTab: ListTab = .all
+    @State private var searchText = ""
     private var displayedProducts: [Product] {
+        var result: [Product]
         switch selectedTab {
         case .all:
-            return products
+            result = products
         case .favorites:
             var seen = Set<Int>()
-            return products.filter { favoritesStore.isFavorite($0.id) && seen.insert($0.id).inserted }
+            result = products.filter { favoritesStore.isFavorite($0.id) && seen.insert($0.id).inserted }
+        }
+
+        let query = searchText.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return result }
+        return result.filter {
+            $0.title.localizedCaseInsensitiveContains(query) ||
+            ($0.brand ?? "").localizedCaseInsensitiveContains(query)
         }
     }
 
@@ -41,6 +50,8 @@ struct ContentView: View {
                         Text(errorMessage)
                             .foregroundStyle(.red)
                             .frame(maxHeight: .infinity)
+                    } else if !searchText.isEmpty && displayedProducts.isEmpty {
+                        ContentUnavailableView.search(text: searchText)
                     } else if selectedTab == .favorites && displayedProducts.isEmpty {
                         ContentUnavailableView(
                             "Favori yok",
@@ -57,6 +68,7 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("Ana Sayfa")
+            .searchable(text: $searchText, prompt: "Araç veya marka ara")
             .navigationDestination(for: Product.self) { product in
                 CarDetailView(product: product)
             }

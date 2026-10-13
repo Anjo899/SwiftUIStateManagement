@@ -19,6 +19,7 @@ struct CarDetailView: View {
                         }
                     }
                 }
+                // Commute denemesi için
                 .tabViewStyle(.page)
                 .indexViewStyle(.page(backgroundDisplayMode: .always))
                 .frame(height: 250)
@@ -33,7 +34,7 @@ struct CarDetailView: View {
                 Text("Boyutlar: \(product.dimensions.width, specifier: "%.1f") × \(product.dimensions.height, specifier: "%.1f") × \(product.dimensions.depth, specifier: "%.1f")")
                     .foregroundStyle(.secondary)
                 Text("Açıklama")
-                    .font(.headline)
+                    .font(.headline) // 
                 Text(product.description)
                 Text("Yorumlar")
                     .font(.headline)
