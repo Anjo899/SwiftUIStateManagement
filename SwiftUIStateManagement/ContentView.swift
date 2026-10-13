@@ -5,6 +5,13 @@ enum ListTab: String, CaseIterable {
     case all = "Ana Menü"
     case favorites = "Favoriler"
 }
+enum SortOption: String, CaseIterable {
+    case none = "Varsayılan"
+    case priceAscending = "Fiyat (artan)"
+    case priceDescending = "Fiyat (azalan)"
+    case rating = "Puan"
+    case name = "İsim"
+}
 
 struct ContentView: View {
     @Environment(FavoritesStore.self) private var favoritesStore
@@ -12,14 +19,40 @@ struct ContentView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var selectedTab: ListTab = .all
+    @State private var searchText = ""
+    @State private var sortOption: SortOption = .none
     private var displayedProducts: [Product] {
+        var result: [Product]
         switch selectedTab {
         case .all:
-            return products
+            result = products
         case .favorites:
             var seen = Set<Int>()
-            return products.filter { favoritesStore.isFavorite($0.id) && seen.insert($0.id).inserted }
+            result = products.filter { favoritesStore.isFavorite($0.id) && seen.insert($0.id).inserted }
         }
+
+        let query = searchText.trimmingCharacters(in: .whitespaces)
+        if !query.isEmpty {
+            result = result.filter {
+                $0.title.localizedCaseInsensitiveContains(query) ||
+                ($0.brand ?? "").localizedCaseInsensitiveContains(query)
+            }
+        }
+
+        switch sortOption {
+        case .none:
+            break
+        case .priceAscending:
+            result.sort { $0.price < $1.price }
+        case .priceDescending:
+            result.sort { $0.price > $1.price }
+        case .rating:
+            result.sort { $0.rating > $1.rating }
+        case .name:
+            result.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
+        }
+
+        return result
     }
 
     var body: some View {
@@ -41,6 +74,8 @@ struct ContentView: View {
                         Text(errorMessage)
                             .foregroundStyle(.red)
                             .frame(maxHeight: .infinity)
+                    } else if !searchText.isEmpty && displayedProducts.isEmpty {
+                        ContentUnavailableView.search(text: searchText)
                     } else if selectedTab == .favorites && displayedProducts.isEmpty {
                         ContentUnavailableView(
                             "Favori yok",
@@ -57,6 +92,20 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("Ana Sayfa")
+            .searchable(text: $searchText, prompt: "Araç veya marka ara")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Picker("Sırala", selection: $sortOption) {
+                            ForEach(SortOption.allCases, id: \.self) { option in
+                                Text(option.rawValue).tag(option)
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down")
+                    }
+                }
+            }
             .navigationDestination(for: Product.self) { product in
                 CarDetailView(product: product)
             }
