@@ -88,6 +88,9 @@ struct ContentView: View {
                                 CarRow(product: product)
                             }
                         }
+                        .refreshable {
+                            await loadProducts(showLoading: false)
+                        }
                     }
                 }
             }
@@ -115,9 +118,10 @@ struct ContentView: View {
         }
     }
 
-    private func loadProducts() async {
-        isLoading = true
+    private func loadProducts(showLoading: Bool = true) async {
+        if showLoading { isLoading = true }
         defer { isLoading = false }
+        errorMessage = nil
         do {
             let url = URL(string: "https://dummyjson.com/products/category/vehicle")!
             let (data, _) = try await URLSession.shared.data(from: url)
